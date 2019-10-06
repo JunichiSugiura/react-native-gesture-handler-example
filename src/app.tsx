@@ -3,7 +3,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import React from 'react';
 import styled from 'styled-components/native';
 
-import {PanGesture} from './examples/index';
+import {PanGestureExample, BottomSheetExample} from './examples/index';
 
 export function App() {
   return (
@@ -31,7 +31,10 @@ export function App() {
 
 const RootStack = createStackNavigator();
 
-const LIST = {panGesture: {name: 'Pan Gesture', component: PanGesture}};
+const LIST = {
+  bottomSheet: {name: 'Bottom Sheet', component: BottomSheetExample},
+  panGesture: {name: 'Pan Gesture', component: PanGestureExample},
+};
 
 export function Menu({
   navigation,
