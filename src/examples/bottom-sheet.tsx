@@ -7,18 +7,13 @@ import {Template} from '../shared'
 
 const {add, cond, eq, event, set, Value} = Animated
 
-const screen = Dimensions.get('screen')
-
 export function BottomSheetExample() {
+  const startY = useRef(new Value(initialStartY)).current
   const dragY = useRef(new Value(0)).current
-  const offsetY = useRef(new Value(screen.height - BOTTOM_BAR_HEIGHT)).current
-  const gestureState = useRef(new Value(-1)).current
+  const newY = useRef(add(startY, dragY)).current
+  const gestureState = useRef(new Value(State.UNDETERMINED)).current
   const translateY = useRef(
-    cond(
-      eq(gestureState, State.ACTIVE),
-      add(offsetY, dragY),
-      set(offsetY, add(offsetY, dragY)),
-    ),
+    cond(eq(gestureState, State.ACTIVE), newY, set(startY, newY)),
   ).current
 
   const handlePan = useMemo(
@@ -47,14 +42,18 @@ export function BottomSheetExample() {
   )
 }
 
+const BAR_HEIGHT = 82
+
+const screen = Dimensions.get('screen')
+const initialStartY = screen.height - BAR_HEIGHT
+const sheetHeight = screen.height * 1.5
+
 const styles = StyleSheet.create({
   bottomSheet: {
     position: 'absolute',
-    height: screen.height * 1.5,
+    height: sheetHeight,
     width: screen.width,
     backgroundColor: 'white',
     borderRadius: 16,
   },
 })
-
-const BOTTOM_BAR_HEIGHT = 82
