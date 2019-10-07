@@ -1,9 +1,9 @@
-import {NavigationNativeContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
-import React from 'react';
-import styled from 'styled-components/native';
+import {NavigationNativeContainer} from '@react-navigation/native'
+import {createStackNavigator} from '@react-navigation/stack'
+import React from 'react'
+import styled from 'styled-components/native'
 
-import {PanGestureExample, BottomSheetExample} from './examples/index';
+import {PanGestureExample, BottomSheetExample} from './examples/index'
 
 export function App() {
   return (
@@ -28,20 +28,20 @@ export function App() {
         ))}
       </RootStack.Navigator>
     </NavigationNativeContainer>
-  );
+  )
 }
 
-const RootStack = createStackNavigator();
+const RootStack = createStackNavigator()
 
 const LIST = {
   bottomSheet: {name: 'Bottom Sheet', component: BottomSheetExample},
   panGesture: {name: 'Pan Gesture', component: PanGestureExample},
-};
+}
 
 export function Menu({
   navigation,
 }: {
-  navigation: {navigate: (name: string) => void};
+  navigation: {navigate: (name: string) => void}
 }) {
   return (
     <Container>
@@ -51,20 +51,20 @@ export function Menu({
         </Row>
       ))}
     </Container>
-  );
+  )
 }
 
 const Container = styled.SafeAreaView`
   flex: 1;
-`;
+`
 
 const Row = styled.TouchableOpacity`
   padding-horizontal: 16;
   flex-direction: row;
   align-items: center;
   height: 40;
-`;
+`
 
 const RowTitle = styled.Text`
   color: white;
-`;
+`

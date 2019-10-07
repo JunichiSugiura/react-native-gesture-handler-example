@@ -1,25 +1,25 @@
-import React, {useMemo, useRef} from 'react';
-import {Dimensions, StyleSheet} from 'react-native';
-import {PanGestureHandler, State} from 'react-native-gesture-handler';
-import Animated from 'react-native-reanimated';
+import React, {useMemo, useRef} from 'react'
+import {Dimensions, StyleSheet} from 'react-native'
+import {PanGestureHandler, State} from 'react-native-gesture-handler'
+import Animated from 'react-native-reanimated'
 
-import {Template} from '../shared';
+import {Template} from '../shared'
 
-const {add, cond, eq, event, set, Value} = Animated;
+const {add, cond, eq, event, set, Value} = Animated
 
-const screen = Dimensions.get('screen');
+const screen = Dimensions.get('screen')
 
 export function BottomSheetExample() {
-  const dragY = useRef(new Value(0)).current;
-  const offsetY = useRef(new Value(screen.height - BOTTOM_BAR_HEIGHT)).current;
-  const gestureState = useRef(new Value(-1)).current;
+  const dragY = useRef(new Value(0)).current
+  const offsetY = useRef(new Value(screen.height - BOTTOM_BAR_HEIGHT)).current
+  const gestureState = useRef(new Value(-1)).current
   const translateY = useRef(
     cond(
       eq(gestureState, State.ACTIVE),
       add(offsetY, dragY),
       set(offsetY, add(offsetY, dragY)),
     ),
-  ).current;
+  ).current
 
   const handlePan = useMemo(
     () =>
@@ -32,7 +32,7 @@ export function BottomSheetExample() {
         },
       ]),
     [],
-  );
+  )
 
   return (
     <Template>
@@ -44,7 +44,7 @@ export function BottomSheetExample() {
         />
       </PanGestureHandler>
     </Template>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 16,
   },
-});
+})
 
-const BOTTOM_BAR_HEIGHT = 82;
+const BOTTOM_BAR_HEIGHT = 82

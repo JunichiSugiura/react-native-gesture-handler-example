@@ -1,13 +1,13 @@
-import {useNavigation} from '@react-navigation/core';
-import React from 'react';
-import styled from 'styled-components/native';
+import {useNavigation} from '@react-navigation/core'
+import React from 'react'
+import styled from 'styled-components/native'
 
 interface ITemplateProps {
-  children: JSX.Element | JSX.Element[];
+  children: JSX.Element | JSX.Element[]
 }
 
 export function Template({children}: ITemplateProps) {
-  const navigation = useNavigation();
+  const navigation = useNavigation()
   return (
     <TemplateContainer>
       <BackContainer onPress={navigation.goBack}>
@@ -15,12 +15,12 @@ export function Template({children}: ITemplateProps) {
       </BackContainer>
       {children}
     </TemplateContainer>
-  );
+  )
 }
 
 const TemplateContainer = styled.View`
   flex: 1;
-`;
+`
 
 const BackContainer = styled.TouchableOpacity`
   height: 40;
@@ -32,9 +32,9 @@ const BackContainer = styled.TouchableOpacity`
   left: 20;
   background: white;
   border-radius: 20;
-`;
+`
 
 const BackText = styled.Text`
   color: black;
   font-size: 16;
-`;
+`
