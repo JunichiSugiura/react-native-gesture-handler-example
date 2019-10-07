@@ -1,39 +1,77 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react'
-import {Alert, Dimensions, StyleSheet} from 'react-native'
+import {Dimensions, StyleSheet} from 'react-native'
 import {PanGestureHandler, State} from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 import styled from 'styled-components/native'
 
 import {Template} from '../shared'
 
+const BOX_SIZE = 100
 const screen = Dimensions.get('screen')
+const initialStartX = (screen.width - BOX_SIZE) / 2
+const initialStartY = (screen.height - BOX_SIZE) / 2
 
-const {add, call, cond, eq, event, interpolate, set, Value} = Animated
+const {
+  add,
+  and,
+  call,
+  cond,
+  eq,
+  event,
+  greaterThan,
+  interpolate,
+  set,
+  Value,
+} = Animated
 
 export function PanGestureExample() {
   const [showBox, setShowBox] = useState(true)
-  const onDrop = useCallback(([x, y]) => {
-    if (x > screen.width / 2 && y > screen.height - DUMPSTER_RADIUS) {
-      Alert.alert('Removed')
-      setShowBox(false)
-    }
-  }, [])
+
+  const removeBox = useCallback(() => {
+    setShowBox(false)
+  }, [setShowBox])
 
   const gestureState = useRef(new Value(State.UNDETERMINED)).current
-  const startX = useRef(new Value((screen.width - BOX_SIZE) / 2)).current
-  const startY = useRef(new Value((screen.height - BOX_SIZE) / 2)).current
+  const startX = useRef(new Value(initialStartX)).current
+  const startY = useRef(new Value(initialStartY)).current
   const dragX = useRef(new Value(0)).current
   const dragY = useRef(new Value(0)).current
   const newX = useRef(add(startX, dragX)).current
   const newY = useRef(add(startY, dragY)).current
+  const isInDumpster = useRef(
+    and(
+      greaterThan(newX, screen.width - DUMPSTER_RADIUS),
+      greaterThan(newY, screen.height - DUMPSTER_RADIUS),
+    ),
+  ).current
+  const isActive = useRef(eq(gestureState, State.ACTIVE)).current
+  const isEnd = useRef(eq(gestureState, State.END)).current
   const translateX = useRef(
-    cond(eq(gestureState, State.ACTIVE), newX, set(startX, newX)),
+    cond(
+      isActive,
+      newX,
+      cond(
+        isEnd,
+        cond(
+          isInDumpster,
+          [set(startX, initialStartX), set(dragX, 0)],
+          set(startX, newX),
+        ),
+        set(startX, newX),
+      ),
+    ),
   ).current
   const translateY = useRef(
-    cond(eq(gestureState, State.ACTIVE), newY, [
+    cond(isActive, newY, [
       cond(
-        eq(gestureState, State.END),
-        [call([newX, newY], onDrop), set(startY, newY)],
+        isEnd,
+        [
+          cond(
+            isInDumpster,
+            [call([], removeBox), set(startY, initialStartY), set(dragY, 0)],
+            set(startY, newY),
+          ),
+        ],
         set(startY, newY),
       ),
     ]),
@@ -61,10 +99,10 @@ export function PanGestureExample() {
 
   return (
     <Template>
-      <PanGestureHandler
-        onGestureEvent={handleGesture}
-        onHandlerStateChange={handleGesture}>
-        {showBox ? (
+      {showBox ? (
+        <PanGestureHandler
+          onGestureEvent={handleGesture}
+          onHandlerStateChange={handleGesture}>
           <Animated.View
             style={[
               StyleSheet.absoluteFill,
@@ -75,22 +113,20 @@ export function PanGestureExample() {
               },
             ]}
           />
-        ) : (
-          <RestoreContainer>
-            <RestoreButton onPress={() => setShowBox(true)}>
-              <RestoreText>Restore</RestoreText>
-            </RestoreButton>
-          </RestoreContainer>
-        )}
-      </PanGestureHandler>
+        </PanGestureHandler>
+      ) : (
+        <RestoreContainer>
+          <RestoreButton onPress={() => setShowBox(true)}>
+            <RestoreText>Restore</RestoreText>
+          </RestoreButton>
+        </RestoreContainer>
+      )}
       <Dumpster>
         <DumpsterText>Trush</DumpsterText>
       </Dumpster>
     </Template>
   )
 }
-
-const BOX_SIZE = 100
 
 const styles = StyleSheet.create({
   container: {flex: 1},
