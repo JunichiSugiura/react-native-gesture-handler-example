@@ -10,24 +10,18 @@ const screen = Dimensions.get('screen');
 const {add, cond, eq, event, interpolate, set, Value} = Animated;
 
 export function PanGestureExample() {
-  const offsetX = useRef(new Value((screen.width - BOX_SIZE) / 2)).current;
-  const offsetY = useRef(new Value((screen.height - BOX_SIZE) / 2)).current;
+  const gestureState = useRef(new Value(State.UNDETERMINED)).current;
+  const startX = useRef(new Value((screen.width - BOX_SIZE) / 2)).current;
+  const startY = useRef(new Value((screen.height - BOX_SIZE) / 2)).current;
   const dragX = useRef(new Value(0)).current;
   const dragY = useRef(new Value(0)).current;
-  const gestureState = useRef(new Value(State.UNDETERMINED)).current;
+  const newX = add(startX, dragX);
+  const newY = add(startY, dragY);
   const translateX = useRef(
-    cond(
-      eq(gestureState, State.ACTIVE),
-      add(offsetX, dragX),
-      set(offsetX, add(offsetX, dragX)),
-    ),
+    cond(eq(gestureState, State.ACTIVE), newX, set(startX, newX)),
   ).current;
   const translateY = useRef(
-    cond(
-      eq(gestureState, State.ACTIVE),
-      add(offsetY, dragY),
-      set(offsetY, add(offsetY, dragY)),
-    ),
+    cond(eq(gestureState, State.ACTIVE), newY, set(startY, newY)),
   ).current;
   const opacity = useRef(
     interpolate(translateY, {
