@@ -5,14 +5,18 @@ import Animated from 'react-native-reanimated'
 
 import {Template} from '../shared'
 
-const {add, cond, eq, event, lessThan, set, Value} = Animated
+const {add, cond, eq, event, greaterThan, lessThan, set, Value} = Animated
 
 export function BottomSheetExample() {
   const startY = useRef(new Value(initialStartY)).current
   const dragY = useRef(new Value(0)).current
   const candidateY = useRef(add(startY, dragY)).current
   const newY = useRef(
-    cond(lessThan(candidateY, minStartY), minStartY, candidateY),
+    cond(
+      lessThan(candidateY, minStartY),
+      minStartY,
+      cond(greaterThan(candidateY, maxStartY), maxStartY, candidateY),
+    ),
   ).current
   const gestureState = useRef(new Value(State.UNDETERMINED)).current
   const translateY = useRef(
@@ -51,6 +55,7 @@ const screen = Dimensions.get('screen')
 const initialStartY = screen.height - BAR_HEIGHT
 const sheetHeight = screen.height * 1.5
 const minStartY = screen.height - sheetHeight
+const maxStartY = screen.height - BAR_HEIGHT
 
 const styles = StyleSheet.create({
   bottomSheet: {
