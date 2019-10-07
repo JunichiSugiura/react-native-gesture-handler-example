@@ -10,9 +10,11 @@ export function App() {
     <NavigationNativeContainer>
       <RootStack.Navigator
         initialRouteName="Menu"
+        headerMode="screen"
         screenOptions={{
+          header: null,
           headerStyle: {
-            backgroundColor: 'black',
+            backgroundColor: 'transparent',
             shadowOpacity: 0,
             elevation: 0,
           },
@@ -52,7 +54,7 @@ export function Menu({
   );
 }
 
-const Container = styled.View`
+const Container = styled.SafeAreaView`
   flex: 1;
 `;
 

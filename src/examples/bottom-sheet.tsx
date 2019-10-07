@@ -1,54 +1,60 @@
-import React, {useRef} from 'react';
+import React, {useMemo, useRef} from 'react';
 import {Dimensions, StyleSheet} from 'react-native';
 import {PanGestureHandler, State} from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-import styled from 'styled-components/native';
+
+import {Template} from '../shared';
 
 const {add, cond, eq, event, set, Value} = Animated;
 
-const {width, height} = Dimensions.get('screen');
+const screen = Dimensions.get('screen');
 
 export function BottomSheetExample() {
   const dragY = useRef(new Value(0)).current;
-  const offsetY = useRef(new Value(0)).current;
+  const offsetY = useRef(new Value(screen.height - BOTTOM_BAR_HEIGHT)).current;
   const gestureState = useRef(new Value(-1)).current;
-  const onGestureEvent = useRef(
-    event([
-      {
-        nativeEvent: {
-          translationY: dragY,
-          state: gestureState,
-        },
-      },
-    ]),
+  const translateY = useRef(
+    cond(
+      eq(gestureState, State.ACTIVE),
+      add(offsetY, dragY),
+      set(offsetY, add(offsetY, dragY)),
+    ),
   ).current;
 
-  const addY = useRef(add(offsetY, dragY)).current;
-  const transY = useRef(
-    cond(eq(gestureState, State.ACTIVE), addY, set(offsetY, addY)),
-  ).current;
+  const handlePan = useMemo(
+    () =>
+      event([
+        {
+          nativeEvent: {
+            translationY: dragY,
+            state: gestureState,
+          },
+        },
+      ]),
+    [],
+  );
 
   return (
-    <StyledPanGestureHandler
-      onGestureEvent={onGestureEvent}
-      onHandlerStateChange={onGestureEvent}>
-      <Animated.View
-        style={[styles.bottomSheet, {transform: [{translateY: transY}]}]}
-      />
-    </StyledPanGestureHandler>
+    <Template>
+      <PanGestureHandler
+        onGestureEvent={handlePan}
+        onHandlerStateChange={handlePan}>
+        <Animated.View
+          style={[styles.bottomSheet, {transform: [{translateY}]}]}
+        />
+      </PanGestureHandler>
+    </Template>
   );
 }
-
-const StyledPanGestureHandler = styled(PanGestureHandler)`
-  flex: 1;
-`;
 
 const styles = StyleSheet.create({
   bottomSheet: {
     position: 'absolute',
-    height: height * 1.5,
-    width,
+    height: screen.height * 1.5,
+    width: screen.width,
     backgroundColor: 'white',
     borderRadius: 16,
   },
 });
+
+const BOTTOM_BAR_HEIGHT = 82;
