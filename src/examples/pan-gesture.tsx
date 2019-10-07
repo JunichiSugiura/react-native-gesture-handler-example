@@ -54,7 +54,7 @@ export function PanGestureExample() {
         isEnd,
         cond(
           isInDumpster,
-          [set(startX, initialStartX), set(dragX, 0)],
+          [set(dragX, 0), set(startX, initialStartX)],
           set(startX, newX),
         ),
         set(startX, newX),
@@ -68,7 +68,7 @@ export function PanGestureExample() {
         [
           cond(
             isInDumpster,
-            [call([], removeBox), set(startY, initialStartY), set(dragY, 0)],
+            [call([], removeBox), set(dragY, 0), set(startY, initialStartY)],
             set(startY, newY),
           ),
         ],
