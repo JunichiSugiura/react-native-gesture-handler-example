@@ -26,9 +26,7 @@ const {
   Value,
 } = Animated
 
-export function LinerExample() {
-  const clock = new Clock()
-
+function runTiming(clock: Animated.Clock, value: number, dest: number) {
   const state = {
     finished: new Value(0),
     position: new Value(0),
@@ -37,26 +35,30 @@ export function LinerExample() {
   }
 
   const config = {
-    duration: new Value(1),
+    duration: 5000,
     toValue: new Value(0),
-    easing: Easing.inOut(Easing.linear),
+    easing: Easing.inOut(Easing.ease),
   }
 
-  const translateX = useRef(
-    cond(
-      clockRunning(clock),
-      [
-        call([], () => console.log('running')),
-        set(state.position, add(state.position, 1)),
-      ],
-      block([
-        startClock(clock),
-        timing(clock, state, config),
-        cond(state.finished, stopClock(clock)),
-        state.position,
-      ]),
-    ),
-  ).current
+  return block([
+    cond(clockRunning(clock), set(config.toValue, dest), [
+      set(state.finished, 0),
+      set(state.time, 0),
+      set(state.position, value),
+      set(state.frameTime, 0),
+      set(config.toValue, dest),
+      startClock(clock),
+    ]),
+    timing(clock, state, config),
+    cond(state.finished, stopClock(clock)),
+    state.position,
+  ])
+}
+
+export function LinerExample() {
+  const clock = useRef(new Clock()).current
+
+  const translateX = useRef(runTiming(clock, 0, 100)).current
 
   // Animated.useCode(startClock(clock), [])
 
