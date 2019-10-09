@@ -11,7 +11,6 @@ const {
   Clock,
   clockRunning,
   cond,
-  debug,
   eq,
   not,
   set,
@@ -94,8 +93,6 @@ function runTiming(
   }
 
   return block([
-    debug('clock: ', clock),
-    debug('position: ', state.position),
     cond(not(clockRunning(clock)), [
       set(state.finished, 0),
       set(state.time, clock),
