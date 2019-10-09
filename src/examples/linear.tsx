@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react'
-import {Dimensions, StyleSheet, TouchableOpacity} from 'react-native'
+import {Dimensions, StyleSheet} from 'react-native'
 import Animated, {Easing} from 'react-native-reanimated'
 import styled from 'styled-components/native'
 
@@ -12,10 +12,7 @@ const {
   clockRunning,
   cond,
   debug,
-  diff,
-  divide,
   eq,
-  neq,
   not,
   set,
   startClock,
