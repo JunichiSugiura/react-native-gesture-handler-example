@@ -1,3 +1,3 @@
 export * from './bottom-sheet'
-export * from './liner'
+export * from './linear'
 export * from './pan-gesture'

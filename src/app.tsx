@@ -5,7 +5,7 @@ import styled from 'styled-components/native'
 
 import {
   BottomSheetExample,
-  LinerExample,
+  LinearExample,
   PanGestureExample,
 } from './examples/index'
 
@@ -39,7 +39,7 @@ const RootStack = createStackNavigator()
 
 const LIST = {
   bottomSheet: {name: 'Bottom Sheet', component: BottomSheetExample},
-  stopwatch: {name: 'Liner', component: LinerExample},
+  linear: {name: 'Linear', component: LinearExample},
   panGesture: {name: 'Pan Gesture', component: PanGestureExample},
 }
 
