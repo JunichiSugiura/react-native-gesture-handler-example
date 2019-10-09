@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react'
-import {Dimensions, StyleSheet} from 'react-native'
+import {Dimensions, StyleSheet, TouchableWithoutFeedback} from 'react-native'
 import Animated, {Easing} from 'react-native-reanimated'
 import styled from 'styled-components/native'
 
@@ -49,20 +49,22 @@ export function LinearExample() {
 
   return (
     <Template>
-      <Container
+      <TouchableWithoutFeedback
         onPress={() => {
           setIsPlaying(!isPlaying)
         }}>
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            styles.clock,
-            {
-              transform: [{translateX}],
-            },
-          ]}
-        />
-      </Container>
+        <Container>
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              styles.clock,
+              {
+                transform: [{translateX}],
+              },
+            ]}
+          />
+        </Container>
+      </TouchableWithoutFeedback>
     </Template>
   )
 }
@@ -126,6 +128,6 @@ const styles = StyleSheet.create({
   },
 })
 
-const Container = styled.TouchableOpacity`
+const Container = styled.View`
   flex: 1;
 `
