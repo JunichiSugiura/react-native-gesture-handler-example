@@ -1,5 +1,5 @@
-import React, {useRef} from 'react'
-import {Dimensions, StyleSheet} from 'react-native'
+import React, {useEffect, useRef, useState} from 'react'
+import {Dimensions, StyleSheet, TouchableOpacity} from 'react-native'
 import Animated, {Easing} from 'react-native-reanimated'
 import styled from 'styled-components/native'
 
@@ -7,12 +7,16 @@ import {Template} from '../shared'
 
 const {
   block,
+  call,
   Clock,
   clockRunning,
   cond,
   debug,
   diff,
   divide,
+  eq,
+  neq,
+  not,
   set,
   startClock,
   stopClock,
@@ -20,14 +24,39 @@ const {
   Value,
 } = Animated
 export function LinearExample() {
-  const clock = useRef(new Clock()).current
-  const translateX = useRef(
-    block([runTiming(clock, initialX, screen.width, 1000)]),
-  ).current
+  const {clock, playerState, translateX} = useRef({
+    clock: new Clock(),
+    playerState: new Value<PlayerState>(PlayerState.PAUSED),
+    translateX: new Value(initialX),
+  }).current
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  Animated.useCode(
+    block([
+      cond(
+        playerState,
+        [
+          cond(eq(translateX, destinationX), set(translateX, initialX)),
+          runTiming(clock, translateX, destinationX, 1000, () => {
+            setIsPlaying(false)
+          }),
+        ],
+        [stopClock(clock)],
+      ),
+    ]),
+    [playerState],
+  )
+
+  useEffect(() => {
+    playerState.setValue(isPlaying ? PlayerState.PLAYING : PlayerState.PAUSED)
+  }, [isPlaying])
 
   return (
     <Template>
-      <Container>
+      <Container
+        onPress={() => {
+          setIsPlaying(!isPlaying)
+        }}>
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
@@ -42,11 +71,17 @@ export function LinearExample() {
   )
 }
 
+enum PlayerState {
+  PAUSED,
+  PLAYING,
+}
+
 function runTiming(
   clock: Animated.Clock,
-  value: number,
+  value: Animated.Value<number>,
   dest: number,
   duration: number,
+  onFinished?: () => void,
 ) {
   const state = {
     finished: new Value(0),
@@ -62,25 +97,31 @@ function runTiming(
   }
 
   return block([
-    debug('clock: ', divide(diff(clock), 1000)),
-    cond(clockRunning(clock), set(config.toValue, dest), [
+    debug('clock: ', clock),
+    debug('position: ', state.position),
+    cond(not(clockRunning(clock)), [
       set(state.finished, 0),
-      set(state.time, 0),
+      set(state.time, clock),
       set(state.position, value),
       set(state.frameTime, 0),
       set(config.toValue, dest),
       startClock(clock),
     ]),
     timing(clock, state, config),
-    cond(state.finished, stopClock(clock)),
-    state.position,
+    cond(state.finished, [
+      stopClock(clock),
+      call([], () => onFinished && onFinished()),
+    ]),
+    set(value, state.position),
   ])
 }
 
 const BOX_SIZE = 10
+const HORIZONTAL_PADDING = 10
 const screen = Dimensions.get('screen')
 const initialY = (screen.height - BOX_SIZE) / 2
-const initialX = 0
+const initialX = HORIZONTAL_PADDING
+const destinationX = screen.width - HORIZONTAL_PADDING - BOX_SIZE
 
 const styles = StyleSheet.create({
   clock: {
@@ -91,6 +132,6 @@ const styles = StyleSheet.create({
   },
 })
 
-const Container = styled.View`
+const Container = styled.TouchableOpacity`
   flex: 1;
 `
