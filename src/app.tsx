@@ -3,7 +3,11 @@ import {createStackNavigator} from '@react-navigation/stack'
 import React from 'react'
 import styled from 'styled-components/native'
 
-import {PanGestureExample, BottomSheetExample} from './examples/index'
+import {
+  BottomSheetExample,
+  LinearExample,
+  PanGestureExample,
+} from './examples/index'
 
 export function App() {
   return (
@@ -35,6 +39,7 @@ const RootStack = createStackNavigator()
 
 const LIST = {
   bottomSheet: {name: 'Bottom Sheet', component: BottomSheetExample},
+  linear: {name: 'Linear', component: LinearExample},
   panGesture: {name: 'Pan Gesture', component: PanGestureExample},
 }
 
