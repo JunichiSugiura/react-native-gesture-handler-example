@@ -1,4 +1,4 @@
-import React, {useMemo, useRef} from 'react'
+import React, {useRef} from 'react'
 import {Dimensions, StyleSheet} from 'react-native'
 import {PanGestureHandler, State} from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
@@ -7,19 +7,15 @@ import {Template} from '../shared'
 
 const {
   add,
-  block,
-  call,
   Clock,
   clockRunning,
   cond,
-  diff,
-  divide,
   eq,
   event,
   greaterThan,
   lessThan,
-  multiply,
   set,
+  spring,
   startClock,
   stopClock,
   sub,
@@ -27,8 +23,12 @@ const {
 } = Animated
 
 export function BottomSheetExample() {
-  const gestureState = new Value(State.UNDETERMINED)
-  const startY = new Value(initialStartY)
+  const {clock, gestureState, startY} = useRef({
+    clock: new Clock(),
+    gestureState: new Value(-1),
+    startY: new Value(initialStartY),
+  }).current
+
   const dragY = new Value(0)
   const candidateY = add(startY, dragY)
   const newY = cond(
@@ -36,52 +36,29 @@ export function BottomSheetExample() {
     minStartY,
     cond(greaterThan(candidateY, maxStartY), maxStartY, candidateY),
   )
-
-  const isActive = eq(gestureState, State.ACTIVE)
-  // const isEnd = eq(gestureState, State.END)
-  const isEnd = block([
-    call([eq(gestureState, State.END)], log),
-    eq(gestureState, State.END),
-  ])
-  const isSnapped = eq(startY, newY)
-
   const snapPoint = cond(
     lessThan(sub(screen.height, newY, initialStartY), newY),
     initialStartY,
     screen.height,
   )
 
-  const clock = new Clock()
-
   const vector = cond(lessThan(startY, snapPoint), VECTOR, -VECTOR)
-  // const dt = divide(diff(clock), 1000)
-  // const distance = multiply(vector, dt)
   const distance = vector
   const newStartY = add(startY, distance)
 
-  function log(...args) {
-    console.log(...args)
-  }
-
   const translateY = useRef(
     cond(
-      isActive,
+      eq(gestureState, State.ACTIVE),
       newY,
       cond(
-        isEnd,
+        eq(gestureState, State.END),
         cond(
-          isSnapped,
-          [call([], () => log('stop')), stopClock(clock), set(startY, newY)],
-          cond(
-            clockRunning(clock),
-            [call([distance, newStartY], log), set(startY, newStartY)],
-            [startClock(clock), set(startY, newY)],
-          ),
-          // [
-          //   call([clockRunning(clock), diff(clock), newStartY], log),
-          //   startClock(clock),
-          //   set(startY, newStartY),
-          // ],
+          eq(startY, newY),
+          [stopClock(clock), set(startY, newY)],
+          cond(clockRunning(clock), set(startY, newStartY), [
+            startClock(clock),
+            set(startY, newY),
+          ]),
         ),
         startY,
       ),
@@ -121,7 +98,12 @@ const sheetHeight = screen.height * 1.5
 const minStartY = screen.height - sheetHeight
 const maxStartY = screen.height - BAR_HEIGHT
 
-function runSpring(clock, value, velocity, dest) {
+function runSpring(
+  clock: Animated.Clock,
+  value: Animated.Value<number>,
+  velocity: number,
+  dest: number,
+) {
   const state = {
     finished: new Value(0),
     velocity: new Value(0),
