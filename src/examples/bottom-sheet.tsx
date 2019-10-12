@@ -16,6 +16,7 @@ const {
   not,
   set,
   spring,
+  SpringUtils,
   startClock,
   stopClock,
   Value,
@@ -59,21 +60,19 @@ export function BottomSheetExample() {
   const newPositionY = add(positionY, dragY)
 
   const translateY = useRef(
-    block([
+    cond(
+      eq(gestureState, State.ACTIVE),
+      [stopClock(clock), newPositionY],
       cond(
-        eq(gestureState, State.ACTIVE),
-        [stopClock(clock), newPositionY],
-        cond(
-          eq(gestureState, State.END),
-          [
-            set(positionY, add(positionY, dragY)),
-            runSpring(clock, positionY, initialPositionY, dragVY),
-            positionY,
-          ],
+        eq(gestureState, State.END),
+        [
+          set(positionY, add(positionY, dragY)),
+          runSpring(clock, positionY, initialPositionY, dragVY),
           positionY,
-        ),
+        ],
+        positionY,
       ),
-    ]),
+    ),
   ).current
 
   return (
@@ -104,21 +103,18 @@ function runSpring(
   dest: number,
   velocity: Animated.Value<number>,
 ) {
-  const state = {
+  const state: Animated.SpringState = {
     finished: new Value(0),
     velocity: new Value(0),
     position: new Value(0),
     time: new Value(0),
   }
 
-  const config = {
-    damping: 30,
-    mass: 1,
-    stiffness: 300,
-    overshootClamping: false,
-    restSpeedThreshold: 0.001,
-    restDisplacementThreshold: 0.001,
-    toValue: new Value(0),
+  const config: Animated.SpringConfig = {
+    ...SpringUtils.makeDefaultConfig(),
+    damping: new Value(30),
+    mass: new Value(1),
+    stiffness: new Value(300),
   }
 
   return block([
@@ -126,7 +122,7 @@ function runSpring(
       set(state.finished, 0),
       set(state.velocity, velocity),
       set(state.position, value),
-      set(config.toValue, dest),
+      set(config.toValue as Animated.Value<number>, dest),
       startClock(clock),
     ]),
     spring(clock, state, config),
