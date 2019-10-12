@@ -7,72 +7,72 @@ import {Template} from '../shared'
 
 const {
   add,
+  block,
   Clock,
   clockRunning,
   cond,
   eq,
   event,
-  greaterThan,
-  lessThan,
+  not,
   set,
   spring,
   startClock,
   stopClock,
-  sub,
   Value,
 } = Animated
 
 export function BottomSheetExample() {
-  const {clock, gestureState, startY} = useRef({
+  const {clock, dragY, dragVY, gestureState, positionY} = useRef({
     clock: new Clock(),
+    dragY: new Value(0),
+    dragVY: new Value(0),
     gestureState: new Value(-1),
-    startY: new Value(initialStartY),
+    positionY: new Value(initialPositionY),
   }).current
-
-  const dragY = new Value(0)
-  const candidateY = add(startY, dragY)
-  const newY = cond(
-    lessThan(candidateY, minStartY),
-    minStartY,
-    cond(greaterThan(candidateY, maxStartY), maxStartY, candidateY),
-  )
-  const snapPoint = cond(
-    lessThan(sub(screen.height, newY, initialStartY), newY),
-    initialStartY,
-    screen.height,
-  )
-
-  const vector = cond(lessThan(startY, snapPoint), VECTOR, -VECTOR)
-  const distance = vector
-  const newStartY = add(startY, distance)
-
-  const translateY = useRef(
-    cond(
-      eq(gestureState, State.ACTIVE),
-      newY,
-      cond(
-        eq(gestureState, State.END),
-        cond(
-          eq(startY, newY),
-          [stopClock(clock), set(startY, newY)],
-          cond(clockRunning(clock), set(startY, newStartY), [
-            startClock(clock),
-            set(startY, newY),
-          ]),
-        ),
-        startY,
-      ),
-    ),
-  ).current
 
   const handlePan = useRef(
     event([
       {
         nativeEvent: {
           translationY: dragY,
+          velocityY: dragVY,
           state: gestureState,
         },
       },
+    ]),
+  ).current
+  // const candidateY = add(position, dragY)
+  // const newY = cond(
+  //   lessThan(candidateY, minStartY),
+  //   minStartY,
+  //   cond(greaterThan(candidateY, maxStartY), maxStartY, candidateY),
+  // )
+  // const snapPoint = cond(
+  //   lessThan(sub(screen.height, newY, initialPositionY), newY),
+  //   initialPositionY,
+  //   screen.height,
+  // )
+
+  // const vector = cond(lessThan(startY, snapPoint), VECTOR, -VECTOR)
+  // const distance = vector
+  // const newStartY = add(startY, distance)
+  const newPositionY = add(positionY, dragY)
+
+  const translateY = useRef(
+    block([
+      cond(
+        eq(gestureState, State.ACTIVE),
+        [stopClock(clock), newPositionY],
+        cond(
+          eq(gestureState, State.END),
+          [
+            set(positionY, add(positionY, dragY)),
+            runSpring(clock, positionY, initialPositionY, dragVY),
+            positionY,
+          ],
+          positionY,
+        ),
+      ),
     ]),
   ).current
 
@@ -93,7 +93,7 @@ const BAR_HEIGHT = 82
 const VECTOR = 50
 
 const screen = Dimensions.get('screen')
-const initialStartY = screen.height - BAR_HEIGHT
+const initialPositionY = screen.height - BAR_HEIGHT
 const sheetHeight = screen.height * 1.5
 const minStartY = screen.height - sheetHeight
 const maxStartY = screen.height - BAR_HEIGHT
@@ -101,8 +101,8 @@ const maxStartY = screen.height - BAR_HEIGHT
 function runSpring(
   clock: Animated.Clock,
   value: Animated.Value<number>,
-  velocity: number,
   dest: number,
+  velocity: Animated.Value<number>,
 ) {
   const state = {
     finished: new Value(0),
@@ -112,17 +112,17 @@ function runSpring(
   }
 
   const config = {
-    damping: 7,
+    damping: 30,
     mass: 1,
-    stiffness: 121.6,
+    stiffness: 300,
     overshootClamping: false,
     restSpeedThreshold: 0.001,
     restDisplacementThreshold: 0.001,
     toValue: new Value(0),
   }
 
-  return [
-    cond(clockRunning(clock), 0, [
+  return block([
+    cond(not(clockRunning(clock)), [
       set(state.finished, 0),
       set(state.velocity, velocity),
       set(state.position, value),
@@ -131,8 +131,8 @@ function runSpring(
     ]),
     spring(clock, state, config),
     cond(state.finished, stopClock(clock)),
-    state.position,
-  ]
+    set(value, state.position),
+  ])
 }
 
 const styles = StyleSheet.create({
