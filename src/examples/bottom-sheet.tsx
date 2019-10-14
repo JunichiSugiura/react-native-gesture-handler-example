@@ -1,4 +1,4 @@
-import React, {useMemo, useRef} from 'react'
+import React, {useRef} from 'react'
 import {Dimensions, StyleSheet} from 'react-native'
 import {PanGestureHandler, State} from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
@@ -6,97 +6,73 @@ import Animated from 'react-native-reanimated'
 import {Template} from '../shared'
 
 const {
+  abs,
   add,
   block,
-  call,
   Clock,
   clockRunning,
   cond,
-  diff,
-  divide,
   eq,
   event,
-  greaterThan,
   lessThan,
   multiply,
+  not,
   set,
+  spring,
+  SpringUtils,
   startClock,
   stopClock,
   sub,
   Value,
 } = Animated
 
-export function BottomSheetExample() {
-  const gestureState = new Value(State.UNDETERMINED)
-  const startY = new Value(initialStartY)
-  const dragY = new Value(0)
-  const candidateY = add(startY, dragY)
-  const newY = cond(
-    lessThan(candidateY, minStartY),
-    minStartY,
-    cond(greaterThan(candidateY, maxStartY), maxStartY, candidateY),
-  )
+interface IProps {
+  snapPoints?: number[]
+}
 
-  const isActive = eq(gestureState, State.ACTIVE)
-  // const isEnd = eq(gestureState, State.END)
-  const isEnd = block([
-    call([eq(gestureState, State.END)], log),
-    eq(gestureState, State.END),
-  ])
-  const isSnapped = eq(startY, newY)
-
-  const snapPoint = cond(
-    lessThan(sub(screen.height, newY, initialStartY), newY),
-    initialStartY,
-    screen.height,
-  )
-
-  const clock = new Clock()
-
-  const vector = cond(lessThan(startY, snapPoint), VECTOR, -VECTOR)
-  // const dt = divide(diff(clock), 1000)
-  // const distance = multiply(vector, dt)
-  const distance = vector
-  const newStartY = add(startY, distance)
-
-  function log(...args) {
-    console.log(...args)
-  }
-
-  const translateY = useRef(
-    cond(
-      isActive,
-      newY,
-      cond(
-        isEnd,
-        cond(
-          isSnapped,
-          [call([], () => log('stop')), stopClock(clock), set(startY, newY)],
-          cond(
-            clockRunning(clock),
-            [call([distance, newStartY], log), set(startY, newStartY)],
-            [startClock(clock), set(startY, newY)],
-          ),
-          // [
-          //   call([clockRunning(clock), diff(clock), newStartY], log),
-          //   startClock(clock),
-          //   set(startY, newStartY),
-          // ],
-        ),
-        startY,
-      ),
-    ),
-  ).current
+export function BottomSheetExample({
+  snapPoints = [initialPositionY, screen.height / 2, 0],
+}: IProps) {
+  const {clock, dragY, dragVY, gestureState, positionY} = useRef({
+    clock: new Clock(),
+    dragY: new Value(0),
+    dragVY: new Value(0),
+    gestureState: new Value(-1),
+    positionY: new Value(initialPositionY),
+  }).current
 
   const handlePan = useRef(
     event([
       {
         nativeEvent: {
           translationY: dragY,
+          velocityY: dragVY,
           state: gestureState,
         },
       },
     ]),
+  ).current
+
+  const newPositionY = add(positionY, dragY)
+  const translateY = useRef(
+    cond(
+      eq(gestureState, State.ACTIVE),
+      [stopClock(clock), newPositionY],
+      cond(
+        eq(gestureState, State.END),
+        [
+          set(positionY, newPositionY),
+          runSpring(
+            clock,
+            positionY,
+            snapPoint(positionY, dragVY, snapPoints),
+            dragVY,
+          ),
+          positionY,
+        ],
+        positionY,
+      ),
+    ),
   ).current
 
   return (
@@ -113,54 +89,74 @@ export function BottomSheetExample() {
 }
 
 const BAR_HEIGHT = 82
-const VECTOR = 50
 
 const screen = Dimensions.get('screen')
-const initialStartY = screen.height - BAR_HEIGHT
-const sheetHeight = screen.height * 1.5
-const minStartY = screen.height - sheetHeight
-const maxStartY = screen.height - BAR_HEIGHT
+const initialPositionY = screen.height - BAR_HEIGHT
 
-function runSpring(clock, value, velocity, dest) {
-  const state = {
+function snapPoint(
+  position: Animated.Value<number>,
+  dragV: Animated.Value<number>,
+  snapPoints: number[],
+): Animated.Node<number> {
+  const sortedPoints = snapPoints
+    .sort((p1, p2) => p1 - p2)
+    .map(p => new Value(p))
+  const destination = add(position, multiply(0.4, dragV))
+  const diffs = sortedPoints.map(value => abs(sub(destination, value)))
+
+  function currentSnapPoint(i = 0): Animated.Node<number> {
+    return i === sortedPoints.length - 1
+      ? block([sortedPoints[i]])
+      : cond(
+          lessThan(diffs[i], diffs[i + 1]),
+          sortedPoints[i],
+          currentSnapPoint(i + 1),
+        )
+  }
+
+  return currentSnapPoint()
+}
+
+function runSpring(
+  clock: Animated.Clock,
+  value: Animated.Value<number>,
+  dest: number | Animated.Node<number>,
+  velocity: Animated.Value<number>,
+) {
+  const state: Animated.SpringState = {
     finished: new Value(0),
     velocity: new Value(0),
     position: new Value(0),
     time: new Value(0),
   }
 
-  const config = {
-    damping: 7,
-    mass: 1,
-    stiffness: 121.6,
-    overshootClamping: false,
-    restSpeedThreshold: 0.001,
-    restDisplacementThreshold: 0.001,
-    toValue: new Value(0),
+  const config: Animated.SpringConfig = {
+    ...SpringUtils.makeDefaultConfig(),
+    damping: new Value(30),
+    mass: new Value(1),
+    stiffness: new Value(300),
   }
 
-  return [
-    cond(clockRunning(clock), 0, [
+  return block([
+    cond(not(clockRunning(clock)), [
       set(state.finished, 0),
       set(state.velocity, velocity),
       set(state.position, value),
-      set(config.toValue, dest),
+      set(config.toValue as Animated.Value<number>, dest),
       startClock(clock),
     ]),
     spring(clock, state, config),
     cond(state.finished, stopClock(clock)),
-    state.position,
-  ]
+    set(value, state.position),
+  ])
 }
 
 const styles = StyleSheet.create({
   bottomSheet: {
     position: 'absolute',
-    height: sheetHeight,
+    height: screen.height,
     width: screen.width,
     backgroundColor: 'white',
     borderRadius: 16,
-    borderWidth: 3,
-    borderColor: 'tomato',
   },
 })

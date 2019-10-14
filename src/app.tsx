@@ -38,7 +38,10 @@ export function App() {
 const RootStack = createStackNavigator()
 
 const LIST = {
-  bottomSheet: {name: 'Bottom Sheet', component: BottomSheetExample},
+  bottomSheet: {
+    name: 'Bottom Sheet',
+    component: BottomSheetExample,
+  },
   linear: {name: 'Linear', component: LinearExample},
   panGesture: {name: 'Pan Gesture', component: PanGestureExample},
 }
