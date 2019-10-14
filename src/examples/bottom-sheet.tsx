@@ -6,6 +6,7 @@ import Animated from 'react-native-reanimated'
 import {Template} from '../shared'
 
 const {
+  abs,
   add,
   block,
   Clock,
@@ -13,16 +14,25 @@ const {
   cond,
   eq,
   event,
+  lessThan,
+  multiply,
   not,
   set,
   spring,
   SpringUtils,
   startClock,
   stopClock,
+  sub,
   Value,
 } = Animated
 
-export function BottomSheetExample() {
+interface IProps {
+  snapPoints?: number[]
+}
+
+export function BottomSheetExample({
+  snapPoints = [initialPositionY, screen.height / 2, 0],
+}: IProps) {
   const {clock, dragY, dragVY, gestureState, positionY} = useRef({
     clock: new Clock(),
     dragY: new Value(0),
@@ -42,23 +52,8 @@ export function BottomSheetExample() {
       },
     ]),
   ).current
-  // const candidateY = add(position, dragY)
-  // const newY = cond(
-  //   lessThan(candidateY, minStartY),
-  //   minStartY,
-  //   cond(greaterThan(candidateY, maxStartY), maxStartY, candidateY),
-  // )
-  // const snapPoint = cond(
-  //   lessThan(sub(screen.height, newY, initialPositionY), newY),
-  //   initialPositionY,
-  //   screen.height,
-  // )
 
-  // const vector = cond(lessThan(startY, snapPoint), VECTOR, -VECTOR)
-  // const distance = vector
-  // const newStartY = add(startY, distance)
   const newPositionY = add(positionY, dragY)
-
   const translateY = useRef(
     cond(
       eq(gestureState, State.ACTIVE),
@@ -66,8 +61,13 @@ export function BottomSheetExample() {
       cond(
         eq(gestureState, State.END),
         [
-          set(positionY, add(positionY, dragY)),
-          runSpring(clock, positionY, initialPositionY, dragVY),
+          set(positionY, newPositionY),
+          runSpring(
+            clock,
+            positionY,
+            snapPoint(positionY, dragVY, snapPoints),
+            dragVY,
+          ),
           positionY,
         ],
         positionY,
@@ -89,18 +89,38 @@ export function BottomSheetExample() {
 }
 
 const BAR_HEIGHT = 82
-const VECTOR = 50
 
 const screen = Dimensions.get('screen')
 const initialPositionY = screen.height - BAR_HEIGHT
-const sheetHeight = screen.height * 1.5
-const minStartY = screen.height - sheetHeight
-const maxStartY = screen.height - BAR_HEIGHT
+
+function snapPoint(
+  position: Animated.Value<number>,
+  dragV: Animated.Value<number>,
+  snapPoints: number[],
+): Animated.Node<number> {
+  const sortedPoints = snapPoints
+    .sort((p1, p2) => p1 - p2)
+    .map(p => new Value(p))
+  const destination = add(position, multiply(0.4, dragV))
+  const diffs = sortedPoints.map(value => abs(sub(destination, value)))
+
+  function currentSnapPoint(i = 0): Animated.Node<number> {
+    return i === sortedPoints.length - 1
+      ? block([sortedPoints[i]])
+      : cond(
+          lessThan(diffs[i], diffs[i + 1]),
+          sortedPoints[i],
+          currentSnapPoint(i + 1),
+        )
+  }
+
+  return currentSnapPoint()
+}
 
 function runSpring(
   clock: Animated.Clock,
   value: Animated.Value<number>,
-  dest: number,
+  dest: number | Animated.Node<number>,
   velocity: Animated.Value<number>,
 ) {
   const state: Animated.SpringState = {
@@ -134,11 +154,9 @@ function runSpring(
 const styles = StyleSheet.create({
   bottomSheet: {
     position: 'absolute',
-    height: sheetHeight,
+    height: screen.height,
     width: screen.width,
     backgroundColor: 'white',
     borderRadius: 16,
-    borderWidth: 3,
-    borderColor: 'tomato',
   },
 })
