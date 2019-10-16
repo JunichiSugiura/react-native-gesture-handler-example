@@ -1,5 +1,5 @@
 import React, {useRef} from 'react'
-import {Dimensions, StyleSheet} from 'react-native'
+import {Dimensions, StyleSheet, Text, TouchableOpacity} from 'react-native'
 import {PanGestureHandler, State} from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 
@@ -81,8 +81,11 @@ export function BottomSheetExample({
         onGestureEvent={handlePan}
         onHandlerStateChange={handlePan}>
         <Animated.View
-          style={[styles.bottomSheet, {transform: [{translateY}]}]}
-        />
+          style={[styles.bottomSheet, {transform: [{translateY}]}]}>
+          <Button onPress={() => {}}>Snap 1</Button>
+          <Button onPress={() => {}}>Snap 2</Button>
+          <Button onPress={() => {}}>Snap 3</Button>
+        </Animated.View>
       </PanGestureHandler>
     </Template>
   )
@@ -158,5 +161,25 @@ const styles = StyleSheet.create({
     width: screen.width,
     backgroundColor: 'white',
     borderRadius: 16,
+    alignItems: 'stretch',
+    paddingTop: 16,
+  },
+  buttonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
   },
 })
+
+interface IButtonProps {
+  children: string
+  onPress: () => void
+}
+
+function Button({children, onPress}: IButtonProps) {
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.buttonContainer}>
+      <Text>{children}</Text>
+    </TouchableOpacity>
+  )
+}
