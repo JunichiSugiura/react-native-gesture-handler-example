@@ -1,4 +1,4 @@
-import React, {useRef} from 'react'
+import React, {useCallback, useRef} from 'react'
 import {Dimensions, StyleSheet, Text, TouchableOpacity} from 'react-native'
 import {PanGestureHandler, State} from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
@@ -33,12 +33,20 @@ interface IProps {
 export function BottomSheetExample({
   snapPoints = [initialPositionY, screen.height / 2, 0],
 }: IProps) {
-  const {clock, dragY, dragVY, gestureState, positionY} = useRef({
+  const {
+    clock,
+    dragY,
+    dragVY,
+    gestureState,
+    positionY,
+    manualSnapPoint,
+  } = useRef({
     clock: new Clock(),
     dragY: new Value(0),
     dragVY: new Value(0),
     gestureState: new Value(-1),
     positionY: new Value(initialPositionY),
+    manualSnapPoint: new Value<number>(-1),
   }).current
 
   const handlePan = useRef(
@@ -56,24 +64,39 @@ export function BottomSheetExample({
   const newPositionY = add(positionY, dragY)
   const translateY = useRef(
     cond(
-      eq(gestureState, State.ACTIVE),
-      [stopClock(clock), newPositionY],
+      lessThan(manualSnapPoint, 0),
       cond(
-        eq(gestureState, State.END),
-        [
-          set(positionY, newPositionY),
-          runSpring(
-            clock,
+        eq(gestureState, State.ACTIVE),
+        [stopClock(clock), newPositionY],
+        cond(
+          eq(gestureState, State.END),
+          [
+            set(positionY, newPositionY),
+            runSpring(
+              clock,
+              positionY,
+              snapPoint(positionY, dragVY, snapPoints),
+              dragVY,
+            ),
             positionY,
-            snapPoint(positionY, dragVY, snapPoints),
-            dragVY,
-          ),
+          ],
           positionY,
-        ],
-        positionY,
+        ),
       ),
+      [
+        runSpring(clock, positionY, manualSnapPoint, dragVY),
+        cond(eq(positionY, manualSnapPoint), set(manualSnapPoint, -1)),
+        positionY,
+      ],
     ),
   ).current
+
+  const snapToFactory = useCallback(
+    (index: number) => () => {
+      manualSnapPoint.setValue(snapPoints[index])
+    },
+    [],
+  )
 
   return (
     <Template>
@@ -82,9 +105,9 @@ export function BottomSheetExample({
         onHandlerStateChange={handlePan}>
         <Animated.View
           style={[styles.bottomSheet, {transform: [{translateY}]}]}>
-          <Button onPress={() => {}}>Snap 1</Button>
-          <Button onPress={() => {}}>Snap 2</Button>
-          <Button onPress={() => {}}>Snap 3</Button>
+          {snapPoints.map((_, i) => (
+            <Button onPress={snapToFactory(i)}>Snap {i + 1}</Button>
+          ))}
         </Animated.View>
       </PanGestureHandler>
     </Template>
@@ -172,7 +195,7 @@ const styles = StyleSheet.create({
 })
 
 interface IButtonProps {
-  children: string
+  children: string | Array<string | number>
   onPress: () => void
 }
 
